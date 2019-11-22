@@ -1,6 +1,6 @@
 #include "ThingSpeak.h"
 #include <ESP8266WiFi.h>
-#include <Servo.h>
+#include<Servo.h>
 
 
 //----------------  Fill in your credentails   ---------------------
@@ -39,6 +39,12 @@ const char* readtempAPIKey = "5DN1YXKWR7WSVZCR";
 const char* writetempAPIKey = "OKVY8C07ULV7952P";
 const char* readldrAPIKey = "U141VNK3E5WV5U2Z";
 const char* writeldrAPIKey = "YDPG4M2LWQ56K70C";
+
+int flagled1=0;
+int flagled2=0;
+int flagled3=0;
+int flagfan=0;
+
 
 void setup() 
 {
@@ -80,21 +86,48 @@ constatusCode1 = ThingSpeak.getLastReadStatus();
  
 if(constatusCode1 == 200)
 {
-    switch(Controlcode)
+    if(flagled1==1)
+       digitalWrite(led1pin,HIGH);
+    else
+       digitalWrite(led1pin,LOW);
+
+    if(flagled2==1)
+       digitalWrite(led2pin,HIGH);
+    else
+       digitalWrite(led2pin,LOW);
+
+    if(flagled3==1)
+       digitalWrite(led3pin,HIGH);
+    else
+       digitalWrite(led3pin,LOW);
+
+    if(flagfan==1)
+       {
+            for(int pos=0;pos<=180;pos+=10)
+            myservo.Write(pos);
+            for(int pos=180;pos<=0;pos--)
+            myservo.Write(pos);
+       }
+    else
+       digitalWrite(led1pin,LOW);
+
+    if(Controlcode==101)
      {
-      case 101:
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled1FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
                Serial.println("Error updating status to cloud. Error code: ");
                Serial.print(constatuscode2);
-                   }
+                  }
                else
                  {
                     digitalWrite(led1pin,HIGH);
                     Serial.println("living room light is on");
-                  }
-      case 102: 
+                    flagled1=1;
+                 }
+     }
+    else if(Controlcode==102)
+      {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled2FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -105,8 +138,11 @@ if(constatusCode1 == 200)
                  {
                     digitalWrite(led2pin,HIGH);
                     Serial.println("Bedroom light is on");
+                    flagled2=1;
                  }      
-      case 103:
+      }
+      else if(Controlcode==103)
+      {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled3FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -117,8 +153,11 @@ if(constatusCode1 == 200)
                  {
                     digitalWrite(led3pin,HIGH);
                     Serial.println("Dining room light is on");
+                    flagled3=1;
                  }
-       case 104:
+      }
+       else if(Controlcode==104) 
+      {  
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -132,9 +171,12 @@ if(constatusCode1 == 200)
                     for(int pos=180;pos<=0;pos--)
                       myservo.Write(pos);
                     Serial.println("fan is on");
+                    flagfan=1;
                     delay(10000);
                  }  
-       case 106:
+     }
+       else if(Controlcode==106)
+     {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled1FieldNumber,0,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -145,8 +187,11 @@ if(constatusCode1 == 200)
                  {
                     digitalWrite(led1pin,LOW);
                     Serial.println("living room light is off");
-                  }   
-        case 107: 
+                    flagled1=0;
+                  }
+     }   
+        else if(Controlcode==107)
+     {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled2FieldNumber,0,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -157,8 +202,11 @@ if(constatusCode1 == 200)
                  {
                     digitalWrite(led2pin,LOW);
                     Serial.println("Bedroom light is off");
+                    flagled2=0;
                  }  
-        case 108:
+      }
+        else if(Controlcode==108)
+      {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled3FieldNumber,0,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -169,8 +217,11 @@ if(constatusCode1 == 200)
                  {
                     digitalWrite(led3pin,LOW);
                     Serial.println("Dining room light is off");
+                    flagled3=0;
                  }
-        case 109:
+      }
+        else if(Controlcode==109)
+      {
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,0,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -179,7 +230,8 @@ if(constatusCode1 == 200)
                   }
                else
                  {
-                Serial.println("fan is on");
+                Serial.println("fan is off");
+                flagfan=0;
                  }
      }
   
@@ -190,9 +242,10 @@ if(constatusCode1 == 200)
    Serial.print(String(constatusCode1)); 
 }
  
- delay(1000); // No need to read the temperature too often.
+ delay(6000); // No need to read the temperature too often.
 
 
 }
+
 
 
