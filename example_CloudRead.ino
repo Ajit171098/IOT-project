@@ -9,6 +9,7 @@ char pass[] = "JKRowling"; // your network password
 //------------------------------------------------------------------
 
 Servo myservo;
+Servo myservo1;
 WiFiClient  client;
 int led1pin=D11;
 int led2pin=D12;
@@ -45,6 +46,10 @@ int flagled1=0;
 int flagled2=0;
 int flagled3=0;
 int flagfan=0;
+int flagautoled1=0;
+int flagautoled2=0;
+int falgautoled3=0;
+int flagautotemp=0;
 
 
 void setup() 
@@ -54,6 +59,7 @@ void setup()
  // wait for serial port to connect. Needed for native USB port only
  // }
  myservo.attach(D3);
+ myservo1.attach( D10 );
  pinMode(D3,OUTPUT);
  pinMode(led1pin,OUTPUT);
  pinMode(led2pin,OUTPUT);
@@ -79,7 +85,12 @@ void setup()
 }
 
 void loop() {
+ int value=analogRead(analogPin);
+ float mV_value=((float)value*3000)/1024;
+ float temp_in_c=(mV_value)/10;
+ int sensedvalue=analogRead(ldrpin);
 
+int threshold=500;
  int constatusCode1 = 0;    //is checked after reading from cloud 
  int constatuscode2=0;      //is checked after writing to cloud
  // Read in field 4 of the public channel recording the temperature
@@ -93,7 +104,64 @@ constatusCode1 = ThingSpeak.getLastReadStatus();
  
 if(constatusCode1 == 200)
 {
-    if(flagled1==1)
+    if(flagautoled1==1)
+    {
+     if(sensedvalue>threshold)
+            {
+                digitalWrite(led1pin,LOW);
+                flagled1=0;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled1FieldNumber,0,writestatusAPIKey);
+		delay(1000);
+            }
+     else if(sensedvalue<=threshold)
+            {
+                digitalWrite(led1pin,HIGH);
+                flagled1=1;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled1FieldNumber,1,writestatusAPIKey);
+		delay(1000);
+            }
+    }
+     if(flagautoled2==1)
+    {
+     if(sensedvalue>threshold)
+            {
+                digitalWrite(led2pin,LOW);
+                flagled2=0;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled2FieldNumber,0,writestatusAPIKey);
+		delay(1000);
+            }
+     else if(sensedvalue<=threshold)
+            {
+                digitalWrite(led2pin,HIGH);
+                flagled2=1;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled2FieldNumber,1,writestatusAPIKey);
+		delay(1000);
+            }
+    }
+   if(flagautoled3==1)
+    {
+     if(sensedvalue>threshold)
+            {
+                digitalWrite(led3pin,LOW);
+                flagled3=0;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled3FieldNumber,0,writestatusAPIKey);
+		delay(1000);
+            }
+     else if(sensedvalue<=threshold)
+            {
+                digitalWrite(led3pin,HIGH);
+                flagled3=1;
+                delay(1000);
+		ThingSpeak.writeField(statusChannelNumber,statusled3FieldNumber,1,writestatusAPIKey);
+		delay(1000);
+            }
+    }
+ if(flagled1==1)
     {
       digitalWrite(led1pin,HIGH);
        delay(1000);
@@ -140,16 +208,34 @@ if(constatusCode1 == 200)
        }
     else
     {
-      digitalWrite(led1pin,LOW);
+      myservo1.write(0);
       delay(1000);
     }
-
-    if(Controlcode=110)
+      if(flagautotemp==1)
+       {
+            if(temp_in_C>28.0)
+	    {
+	    for(int pos=0;pos<=180;pos+=10)
+            {
+               myservo1.write(pos);
+               delay(10);
+            }
+            for(int pos=180;pos<=0;pos-=10)
+            {
+               myservo1.write(pos);
+               delay(10);
+            }
+	    }
+	    else
+	    {
+		myservo1.write(0);
+		delay(10);
+	    }
+       }
+    if(Controlcode==110)
     {
       constatuscode2=ThingSpeak.writeField(  statusChannelNumber,statusautoled1FieldNumber,1,writestatusAPIKey);
-      int threshold=
-      sensedvalue=analogRead(ldrpin);
-
+      
       if(constatuscode2!=200)
         {
            Serial.println("Error updating status to cloud. Error code: ");
@@ -157,14 +243,15 @@ if(constatusCode1 == 200)
         }
       else 
         {
-          if(sensedvalue>threshold)
+            flagautoled1=1;
+	    if(sensedvalue>threshold)
             {
                 digitalWrite(led1pin,LOW);
                 flagled1=0;
                 delay(1000);
 		ThingSpeak.writeField(statusChannelNumber,statusled1FieldNumber,0,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Living room light turned off.")
+		Serial.println("Living room light turned off.");
             }
            else if(sensedvalue<=threshold)
             {
@@ -173,16 +260,16 @@ if(constatusCode1 == 200)
                 delay(1000);
 		ThingSpeak.writeField(statusChannelNumber,statusled1FieldNumber,1,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Living room light turned on.")                
+		Serial.println("Living room light turned on.") ;              
             }
 
         }
     }
-else if(Controlcode=111)
+else if(Controlcode==111)
     {
       constatuscode2=ThingSpeak.writeField(  statusChannelNumber,statusautoled2FieldNumber,1,writestatusAPIKey);
-      int threshold=
-      sensedvalue=analogRead(ldrpin);
+     
+      
 
       if(constatuscode2!=200)
         {
@@ -190,7 +277,7 @@ else if(Controlcode=111)
            Serial.print(constatuscode2);
         }
       else 
-        {
+        { flagautoled2=1;
           if(sensedvalue>threshold)
             {
                 digitalWrite(led2pin,LOW);
@@ -198,7 +285,7 @@ else if(Controlcode=111)
                 delay(1000);
                 ThingSpeak.writeField(statusChannelNumber,statusled2FieldNumber,0,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Bed room light turned off.")
+		Serial.println("Bed room light turned off.");
             }
            else if(sensedvalue<=threshold)
             {
@@ -207,16 +294,16 @@ else if(Controlcode=111)
                 delay(1000);  
                 ThingSpeak.writeField(statusChannelNumber,statusled2FieldNumber,1,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Bed room light turned on.")                
+		Serial.println("Bed room light turned on.") ;               
             }
 
         }
     }
-else if(Controlcode=112)
+else if(Controlcode==112)
     {
       constatuscode2=ThingSpeak.writeField(  statusChannelNumber,statusautoled3FieldNumber,1,writestatusAPIKey);
-      int threshold=
-      sensedvalue=analogRead(ldrpin);
+      
+      
 
       if(constatuscode2!=200)
         {
@@ -225,6 +312,7 @@ else if(Controlcode=112)
         }
       else 
         {
+          flagautoled3=1;
           if(sensedvalue>threshold)
             {
                 digitalWrite(led3pin,LOW);
@@ -232,7 +320,7 @@ else if(Controlcode=112)
                 delay(1000);
                 ThingSpeak.writeField(statusChannelNumber,statusled3FieldNumber,0,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Dining room light turned off.")
+		Serial.println("Dining room light turned off.");
             }
            else if(sensedvalue<=threshold)
             {
@@ -241,13 +329,15 @@ else if(Controlcode=112)
                 delay(1000);
                 ThingSpeak.writeField(statusChannelNumber,statusled3FieldNumber,1,writestatusAPIKey);
 		delay(1000);
-		Serial.println("Dining room light turned on.")                
+		Serial.println("Dining room light turned on.") ;               
             }
 
         }
     }
  else if(Controlcode==101)
      {
+		flagautoled1=0;
+		ThingSpeak.writeField(statusChannelNumber,statusautoled1FieldNumber,0,writestatusAPIKey);
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled1FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -264,7 +354,9 @@ else if(Controlcode=112)
      }
     else if(Controlcode==102)
       {
-               constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled2FieldNumber,1,writestatusAPIKey);
+               flagautoled2=0;
+	       ThingSpeak.writeField(statusChannelNumber,statusautoled2FieldNumber,0,writestatusAPIKey);
+	       constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled2FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
                Serial.println("Error updating status to cloud. Error code: ");
@@ -280,6 +372,8 @@ else if(Controlcode=112)
       }
       else if(Controlcode==103)
       {
+		flagautoled3=0;
+		ThingSpeak.writeField(statusChannelNumber,statusautoled3FieldNumber,0,writestatusAPIKey);
                constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusled3FieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
@@ -296,7 +390,9 @@ else if(Controlcode=112)
       }
        else if(Controlcode==104) 
       {  
-               constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,1,writestatusAPIKey);
+               flagautotemp=0;
+		ThingSpeak.writeField(statusChannelNumber,statusautofanFieldNumber,0,writestatusAPIKey);
+		constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,1,writestatusAPIKey);
                if(constatuscode2!=200)
                   {
                Serial.println("Error updating status to cloud. Error code: ");
@@ -306,12 +402,12 @@ else if(Controlcode=112)
                  {
                     for(int pos=0;pos<=180;pos+=10)
                     {
-                      myservo.write(pos);
+                      myservo1.write(pos);
                       delay(10);
                     }
                     for(int pos=180;pos<=0;pos-=10)
                     {
-                        myservo.write(pos);
+                        myservo1.write(pos);
                         delay(10);
                     }
                     Serial.println("Fan is on");
@@ -377,6 +473,7 @@ else if(Controlcode=112)
                   }
                else
                  { 
+                myservo1.write(0);
                 Serial.println("fan is off");
                 flagfan=0;
                  }
@@ -397,6 +494,35 @@ else if(Controlcode=112)
         }
       
    }
+else if(Controlcode==113)
+{
+ flagautotemp=1;
+ if(temp_in_c>=28)
+{
+   constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,1,writestatusAPIKey);
+   for(int pos=0;pos<=180;pos+=10)
+         {
+               myservo1.write(pos);
+               delay(10);
+          }
+     for(int pos=180;pos<=0;pos-=10)
+         {
+               myservo1.write(pos);
+               delay(10);
+         }
+         Serial.println("Fan is on");
+         flagfan=1;
+         delay(1000);
+}else 
+{
+constatuscode2=ThingSpeak.writeField( statusChannelNumber,statusfanFieldNumber,0,writestatusAPIKey)
+ myservo1.write(0);
+flagfan=0;
+Serial.println("fan is off");
+}
+
+}
+
  else
 {
    Serial.println("Problem reading channel. HTTP error code: " );
@@ -405,6 +531,3 @@ else if(Controlcode=112)
  
  delay(5000); // No need to read the temperature too often.
 }
-
-
-
